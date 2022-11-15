@@ -6,6 +6,14 @@
   "workspaces": [
     "packages/*"
   ],
+  "main": "packages/crud/lib/index.js",
+  "typings": "packages/crud/lib/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "packages/crud/lib"
+  ],
   "private": true,
   "scripts": {
     "boot": "npx lerna bootstrap",
@@ -29,7 +37,7 @@
     "lint": "npx eslint \"packages/**/!(*.d).ts\" --fix",
     "commit": "npx git-cz",
     "postinstall": "npx opencollective",
-    "prepare": "npx husky install",
+    "prepare": "npm run build",
     "release": "mrepo release",
     "release:alpha": "yarn release prerelease --preid alpha --dist-tag alpha",
     "release:beta": "yarn release prerelease --preid beta --dist-tag beta"

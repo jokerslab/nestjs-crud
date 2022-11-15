@@ -29,6 +29,8 @@ export class CrudRoutesFactory {
 
   protected swaggerModels: any = {};
 
+  protected simpleModel: any;
+
   constructor(protected target: any, options: CrudOptions) {
     this.options = options;
     this.create();
@@ -45,6 +47,10 @@ export class CrudRoutesFactory {
 
   protected get modelName(): string {
     return this.options.model.type.name;
+  }
+
+  protected get simpleEntity(): any {
+    return 'oops';
   }
 
   protected get modelType(): any {
@@ -279,21 +285,36 @@ export class CrudRoutesFactory {
   }
 
   protected setResponseModels() {
-    const modelType = isFunction(this.modelType)
-      ? this.modelType
-      : SerializeHelper.createGetOneResponseDto(this.modelName);
-    this.swaggerModels.get = isFunction(this.options.serialize.get) ? this.options.serialize.get : modelType;
-    this.swaggerModels.getMany =
-      this.options.serialize.getMany || SerializeHelper.createGetManyDto(this.swaggerModels.get, this.modelName);
-    this.swaggerModels.create = isFunction(this.options.serialize.create) ? this.options.serialize.create : modelType;
-    this.swaggerModels.update = isFunction(this.options.serialize.update) ? this.options.serialize.update : modelType;
-    this.swaggerModels.replace = isFunction(this.options.serialize.replace)
-      ? this.options.serialize.replace
-      : modelType;
-    this.swaggerModels.delete = isFunction(this.options.serialize.delete) ? this.options.serialize.delete : modelType;
-    this.swaggerModels.recover = isFunction(this.options.serialize.recover)
-      ? this.options.serialize.recover
-      : modelType;
+    // const modelType = isFunction(this.modelType)
+    //   ? this.modelType
+    //   : SerializeHelper.createGetOneResponseDto(this.modelName);
+    const joinTree = {};
+    if (this.options && this.options.query && this.options.query.join) {
+      const joins = this.options.query.join;
+      // build the join tree
+      Object.keys(joins).forEach((key) => {
+        const join = joins[key];
+        const parts = key.split('.');
+        let current = joinTree;
+        for (let i = 0; i < parts.length; i++) {
+          const part = parts[i];
+          if (!current[part]) {
+            current[part] = {};
+          }
+          current = current[part];
+        }
+      });
+    }
+
+    const modelType = SerializeHelper.createSimpleDto(this.modelType, this.modelName, joinTree);
+    this.simpleModel = modelType;
+    this.swaggerModels.get = modelType;
+    this.swaggerModels.getMany = SerializeHelper.createGetManyDto(this.swaggerModels.get, this.modelName);
+    this.swaggerModels.create = modelType;
+    this.swaggerModels.update = modelType;
+    this.swaggerModels.replace = modelType;
+    this.swaggerModels.delete = modelType;
+    this.swaggerModels.recover = modelType;
     Swagger.setExtraModels(this.swaggerModels);
   }
 
@@ -439,7 +460,7 @@ export class CrudRoutesFactory {
       R.setRouteArgsTypes([Object, bulkDto], this.targetProto, name);
     } else if (isIn(name, ['createOneBase', 'updateOneBase', 'replaceOneBase'])) {
       const action = this.routeNameAction(name);
-      const dto = this.options.dto[action] || this.modelType;
+      const dto = this.options.dto[action] || this.simpleModel || this.modelType;
       R.setRouteArgsTypes([Object, dto], this.targetProto, name);
     } else {
       R.setRouteArgsTypes([Object], this.targetProto, name);

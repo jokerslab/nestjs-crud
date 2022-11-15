@@ -557,3 +557,13 @@ export function ApiProperty(options?: any): PropertyDecorator {
     }
   };
 }
+
+export function ApiPropertyProg(options: any, target: any, propertyKey: string): any {
+  /* istanbul ignore else */
+  if (swagger) {
+    // tslint:disable-next-line
+    const ApiPropertyDecorator = swagger.ApiProperty || /* istanbul ignore next */ swagger.ApiModelProperty;
+    // tslint:disable-next-line
+    ApiPropertyDecorator(options)(target, propertyKey);
+  }
+}
